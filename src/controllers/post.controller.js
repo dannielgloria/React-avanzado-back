@@ -1,57 +1,41 @@
 const { post } = require('../app');
-let posts = require('../models/post.model');
+const Post = require('../models/post.model');
 
 //obtener todos los post (GET)
-exports.getAllPost = (req, res) => {
+exports.getAllPost = async (req, res) => {
+   try {
+    const posts = await Post.find();
     res.json(posts)
+   } catch (err) {
+    res.status(500).json({message: 'Error al obtener todos los posts', error: err.message });
+   }
 };
 
 //obtener post por id (GET)
-exports.getPostById = (req,res) => {
-    const id = parseInt(req.params.id);
-    const post = posts.find(p => p.id === id);
-    if (!post) return res.status(404).json({error: 'Post no encontrado'});
-    res.json(post);
+exports.getPostById = async (req,res) => {
+    try {
+        const post = await Post.findById(req.params.id);
+        if (post) return res.json(post);
+        return res.status(401).json({message: 'Post no encontrado'});
+    } catch (err) {
+        return res.status(500).json({message: 'Error al obtener el post', error: err.message});
+    }
 };
 
 // crear post 
-exports.createPost = (req,res) => {
-    // en lugar de usar un id con fecha, usar un id numercio pero primero deben de buscar
-    //  que no exista un idi con el mismo valor, si ya existe uno mostrar el error de post con id
-    // existente
-    const newPost = {
-        id: Date.now(),
-        title: req.body.title,
-        content: req.body.content
-    };
-    posts.push(newPost);
-
-    return res.status(201).json(newPost)
+exports.createPost = async (req,res) => {
+    const post = new Post(req.body);
+    await post.save();
+    return res.status(201).json(post)
 };
 
 // Actualiza datos de post por id
-exports.updatePost = (req,res) => {
-    const id = parseInt(req.params.id);
-    const index = posts.findIndex(p => p.id === id);
-    if (index === -1 ) return res.status(404).json({error: 'Post no encontrado'});
-
-    posts[index] = {
-        ...posts[index],
-        title: req.body.title,
-        content: req.body.content
-    };
-    
-    return res.json(posts[index]);
+exports.updatePost = async (req,res) => {
+    const updated = await Post.findByIdAndUpdate(req.params.id, req.body, {new: true});
+    return res.json(updated)
 };
 
-exports.deletePost = (req,res) => {
-    const id = parseInt(req.params.id);
-    const inicial = posts.length;
-    posts = posts.filter(p => p.id !== id)
-    if (posts.length === inicial) return res.status(404).json({error: 'Post no encontrado'});
-
-    // Actualizar el modulo donde esta nuestro arreglo de post
-    require('../models/post.model').splice(0, require('../models/post.model').length, ...posts);
-
-    return res.status(204).end()
+exports.deletePost = async (req,res) => {
+    await Post.findByIdAndDelete(req.params.id);
+    return res.status(204).end();
 };

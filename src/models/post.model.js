@@ -1,5 +1,10 @@
-let posts = [
-    { id: 1, title: 'Primer post', content: 'Hola mundo'}
-]
+const mongoose = require('mongoose');
 
-module.exports = posts
+const postSchema = new mongoose.Schema({
+    title: String,
+    content: String,
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User'},
+    created_at: { type: Date, default: Date.now}
+});
+
+module.exports = mongoose.model('Post', postSchema);
